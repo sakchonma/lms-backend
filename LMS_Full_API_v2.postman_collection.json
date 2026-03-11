@@ -1,0 +1,696 @@
+{
+	"info": {
+		"_postman_id": "e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b",
+		"name": "LMS Full API Collection (Fixed Complete)",
+		"description": "Collection รวมครบทุกเส้น API สำหรับโปรเจค LMS (Admin + Learner)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin_user\",\n    \"password\": \"password123\",\n    \"email\": \"admin@example.com\",\n    \"firstName\": \"System\",\n    \"lastName\": \"Admin\",\n    \"role\": \"admin\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.environment.set(\"token\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/api/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Admin - User Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"learner1\",\n    \"password\": \"pass123\",\n    \"email\": \"learner1@test.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"role\": \"learner\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Updated Name\",\n    \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "REPLACE_WITH_USER_ID"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete User (Trash)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/users/:userId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "REPLACE_WITH_USER_ID"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Admin - Course Management",
+			"item": [
+				{
+					"name": "Get All Courses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/courses",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"courses"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Node.js Advanced\",\n    \"description\": \"Deep dive into Node.js\",\n    \"status\": \"publish\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/courses",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"courses"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Course",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"publish\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/courses/:courseId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"courses",
+								":courseId"
+							],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "REPLACE_WITH_COURSE_ID"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Section",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Introduction\",\n    \"priority\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/courses/:courseId/sections",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"courses",
+								":courseId",
+								"sections"
+							],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "REPLACE_WITH_COURSE_ID"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Lesson",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Getting Started\",\n    \"type\": \"video\",\n    \"videoUrl\": \"http://youtube.com/..\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/courses/sections/:sectionId/lessons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"courses",
+								"sections",
+								":sectionId",
+								"lessons"
+							],
+							"variable": [
+								{
+									"key": "sectionId",
+									"value": "REPLACE_WITH_SECTION_ID"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Admin - Class Management",
+			"item": [
+				{
+					"name": "Get All Classes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/classes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"classes"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Class",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Batch 1 - 2024\",\n    \"course\": \"COURSE_ID\",\n    \"schedule\": \"Weekends 10AM\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/classes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"classes"
+							]
+						}
+					}
+				},
+				{
+					"name": "Assign Users to Class",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"users\": [\"USER_ID_1\", \"USER_ID_2\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/classes/:classId/assign",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"classes",
+								":classId",
+								"assign"
+							],
+							"variable": [
+								{
+									"key": "classId",
+									"value": "REPLACE_WITH_CLASS_ID"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Admin - Pathways",
+			"item": [
+				{
+					"name": "Get All Pathways",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/pathways",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"pathways"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Pathway",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Backend Dev\",\n    \"courses\": [{\"courseId\": \"ID\", \"order\": 1}]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/pathways",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"pathways"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Admin - Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/admin/dashboard",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"dashboard"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Learner System",
+			"item": [
+				{
+					"name": "View Catalog",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/learner/catalog",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"learner",
+								"catalog"
+							]
+						}
+					}
+				},
+				{
+					"name": "Course Detail",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/learner/course/:courseId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"learner",
+								"course",
+								":courseId"
+							],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "REPLACE_WITH_COURSE_ID"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Enroll in Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/learner/enroll/:courseId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"learner",
+								"enroll",
+								":courseId"
+							],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "REPLACE_WITH_COURSE_ID"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get My Courses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/learner/my-courses",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"learner",
+								"my-courses"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Assigned Pathways",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/learner/pathways",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"learner",
+								"pathways"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000"
+		},
+		{
+			"key": "token",
+			"value": ""
+		}
+	]
+}
