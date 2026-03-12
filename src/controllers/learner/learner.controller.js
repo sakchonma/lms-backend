@@ -2,10 +2,57 @@ const Course = require('../../models/Course');
 const User = require('../../models/User');
 const Pathway = require('../../models/Pathway');
 
+const Class = require('../../models/Class');
+
+exports.getMyClasses = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).populate('myClasses');
+        res.json(user.myClasses || []);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.getClassDetail = async (req, res) => {
+    try {
+        const cls = await Class.findById(req.params.id);
+        if (!cls) return res.status(404).json({ message: 'Class not found' });
+        res.json(cls);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.getClassesCatalog = async (req, res) => {
+    try {
+        // Fetch all classes regardless of status for now to ensure data shows up
+        const classes = await Class.find(); 
+        res.json(classes);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 exports.getCourseCatalog = async (req, res) => {
     try {
-        const courses = await Course.find({ status: 'publish' });
-        res.json(courses);
+        const [courses, pathways] = await Promise.all([
+            Course.find({ status: 'publish' }),
+            Pathway.find()
+        ]);
+
+        const coursesWithPathwayInfo = courses.map(course => {
+            // Find all pathways this course belongs to by checking items in each section
+            const parentPathways = pathways
+                .filter(p => p.sections.some(s => s.items.some(i => i.refId && i.refId.toString() === course._id.toString())))
+                .map(p => ({ id: p._id, title: p.title }));
+
+            return {
+                ...course._doc,
+                belongsToPathways: parentPathways.length > 0 ? parentPathways : []
+            };
+        });
+
+        res.json(coursesWithPathwayInfo);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -15,15 +62,44 @@ exports.getCourseDetail = async (req, res) => {
     try {
         const course = await Course.findById(req.params.id).populate({
             path: 'sections',
-            populate: {
-                path: 'lessons',
-            },
+            populate: { path: 'lessons' },
         });
-        if (course) {
-            res.json(course);
-        } else {
-            res.status(404).json({ message: 'Course not found' });
+        
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+
+        // Find all pathways this course belongs to
+        const pathways = await Pathway.find();
+        const parentPathways = pathways.filter(p => 
+            p.sections.some(s => s.items.some(i => i.refId && i.refId.toString() === course._id.toString()))
+        );
+
+        res.json({
+            ...course._doc,
+            belongsToPathways: parentPathways
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.enrollCourse = async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const userId = req.user._id;
+
+        const inPathways = await Pathway.find({ "sections.items.refId": courseId });
+        if (inPathways.length > 0) {
+            return res.status(400).json({ 
+                message: 'This course belongs to multiple pathways. Please select a pathway to enroll.',
+                pathways: inPathways.map(p => ({ id: p._id, title: p.title }))
+            });
         }
+
+        const user = await User.findById(userId);
+        if (user.myCourses.some(id => id.toString() === courseId)) return res.status(400).json({ message: 'Already enrolled' });
+        
+        await User.findByIdAndUpdate(userId, { $addToSet: { pendingCourses: courseId } });
+        res.json({ message: 'Enrollment request sent.' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -38,59 +114,37 @@ exports.getMyCourses = async (req, res) => {
     }
 };
 
-exports.enrollCourse = async (req, res) => {
-    try {
-        const courseId = req.params.id;
-        const userId = req.user._id;
-
-        const user = await User.findById(userId);
-        
-        // ตรวจสอบว่าลงทะเบียนหรือยัง (ใช้ String เปรียบเทียบ)
-        const isEnrolled = user.myCourses.some(id => id.toString() === courseId);
-        if (isEnrolled) {
-            return res.status(400).json({ message: 'Already enrolled and approved' });
-        }
-
-        const isPending = user.pendingCourses.some(id => id.toString() === courseId);
-        if (isPending) {
-            return res.status(400).json({ message: 'Request is already pending' });
-        }
-
-        // ใช้ $addToSet เพื่อป้องกันข้อมูลซ้ำและบันทึกลง DB ทันที
-        await User.findByIdAndUpdate(userId, {
-            $addToSet: { pendingCourses: courseId }
-        });
-
-        res.json({ message: 'Enrollment request sent. Waiting for admin approval.' });
-    } catch (error) {
-        console.error("Enrollment Error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
 exports.getAssignedPathways = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
-        const pathways = await Pathway.find({ 'courses.courseId': { $in: user.myCourses } }).populate('courses.courseId');
+        const user = await User.findById(req.user._id).populate('myPathways');
+        
+        if (!user.myPathways || user.myPathways.length === 0) {
+            return res.json([]);
+        }
+
+        // Get full details for each pathway
+        const pathways = await Pathway.find({ _id: { $in: user.myPathways } })
+            .populate('sections.items.refId');
         
         const updatedPathways = pathways.map(pathway => {
-            const coursesWithStatus = pathway.courses.sort((a, b) => a.order - b.order).map((item, index) => {
+            const allItems = pathway.sections.reduce((acc, section) => [...acc, ...section.items], []);
+            
+            const itemsWithStatus = allItems.map((item, index) => {
+                const currentId = (item.refId?._id || item.refId)?.toString();
                 let isLocked = false;
                 if (index > 0) {
-                    const prevCourseId = pathway.courses[index - 1].courseId._id;
-                    if (!user.completedCourses.includes(prevCourseId)) {
-                        isLocked = true;
-                    }
+                    const prevId = (allItems[index - 1].refId?._id || allItems[index - 1].refId)?.toString();
+                    if (!user.completedCourses.some(id => id.toString() === prevId)) isLocked = true;
                 }
                 return {
                     ...item._doc,
                     isLocked,
-                    isCompleted: user.completedCourses.includes(item.courseId._id)
+                    isCompleted: user.completedCourses.some(id => id.toString() === currentId)
                 };
             });
-            return { ...pathway._doc, courses: coursesWithStatus };
+            return { ...pathway._doc, items: itemsWithStatus };
         });
-
+        
         res.json(updatedPathways);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -112,8 +166,33 @@ exports.completeCourse = async (req, res) => {
 
 exports.getAllPathways = async (req, res) => {
     try {
-        const pathways = await Pathway.find().populate('courses.courseId');
+        const pathways = await Pathway.find().populate('sections.items.refId');
         res.json(pathways);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.enrollClass = async (req, res) => {
+    try {
+        const classId = req.params.id;
+        const userId = req.user._id;
+        const { roundId } = req.body;
+
+        const user = await User.findById(userId);
+        if (user.myClasses.some(id => id.toString() === classId)) {
+            return res.status(400).json({ message: 'Already enrolled in this class' });
+        }
+        
+        if (user.pendingClasses.some(id => id.toString() === classId)) {
+            return res.status(400).json({ message: 'Enrollment request already pending' });
+        }
+
+        await User.findByIdAndUpdate(userId, { 
+            $addToSet: { pendingClasses: classId } 
+        });
+
+        res.json({ message: 'Enrollment request for class sent. Waiting for admin approval.' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -123,16 +202,22 @@ exports.enrollPathway = async (req, res) => {
     try {
         const pathway = await Pathway.findById(req.params.id);
         if (!pathway) return res.status(404).json({ message: 'Pathway not found' });
-
-        const courseIds = pathway.courses.map(c => c.courseId.toString());
-        const userId = req.user._id;
-
-        // เพิ่มทุกคอร์สใน Pathway เข้าไปที่ pendingCourses (ถ้ายังไม่มี)
-        await User.findByIdAndUpdate(userId, {
-            $addToSet: { pendingCourses: { $each: courseIds } }
+        
+        // Extract all course IDs from all sections
+        const courseIds = [];
+        pathway.sections.forEach(s => {
+            s.items.forEach(i => {
+                if (i.itemType === 'Course') courseIds.push(i.refId.toString());
+            });
         });
 
-        res.json({ message: `Successfully requested enrollment for all ${courseIds.length} courses in the pathway!` });
+        await User.findByIdAndUpdate(req.user._id, {
+            $addToSet: { 
+                pendingCourses: { $each: courseIds },
+                pendingPathways: pathway._id
+            }
+        });
+        res.json({ message: `Successfully requested enrollment for pathway: ${pathway.title}` });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

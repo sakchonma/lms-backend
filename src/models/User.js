@@ -7,12 +7,22 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
+    image: { type: String, default: '' },
     role: { type: String, enum: ['admin', 'learner'], default: 'learner' },
     active: { type: Boolean, default: true },
     isTrash: { type: Boolean, default: false },
     myCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+    myPathways: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Pathway' }],
+    myClasses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }],
     pendingCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+    pendingPathways: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Pathway' }],
+    pendingClasses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }],
     completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+    // Game Stats
+    level: { type: Number, default: 1 },
+    xp: { type: Number, default: 0 },
+    rank: { type: String, default: 'NOVICE' },
+    points: { type: Number, default: 0 },
     created_at: { type: Date, default: Date.now },
 });
 

@@ -27,6 +27,20 @@ app.use('/api/admin/dashboard', require('./routers/admin/dashboard.router'));
 
 app.use('/api/learner', require('./routers/learner/learner.router'));
 
+// Error Handler Middleware
+app.use((err, req, res, next) => {
+    console.error('--- Global Error Debug ---');
+    console.error('Method:', req.method);
+    console.error('URL:', req.url);
+    console.error('Error Stack:', err.stack);
+    console.error('---------------------------');
+    
+    res.status(err.status || 500).json({
+        message: err.message,
+        details: err.errors || undefined
+    });
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

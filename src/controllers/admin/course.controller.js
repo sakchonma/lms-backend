@@ -15,21 +15,87 @@ exports.getCourses = async (req, res) => {
 };
 
 exports.createCourse = async (req, res) => {
-    const { title, description, image, status } = req.body;
     try {
-        const course = await Course.create({ title, description, image, status });
+        console.log('--- Create Course Debug ---');
+        console.log('Body:', req.body);
+        console.log('File:', req.file);
+
+        const courseData = { ...req.body };
+        
+        // Parse complex fields
+        ['enrollmentSettings', 'publishSettings', 'tags', 'attachments'].forEach(field => {
+            if (typeof courseData[field] === 'string') {
+                try {
+                    courseData[field] = JSON.parse(courseData[field]);
+                } catch (e) {
+                    console.error(`Error parsing ${field}:`, e);
+                }
+            }
+        });
+
+        // Convert strings to proper types for Mongoose
+        if (courseData.price) courseData.price = Number(courseData.price);
+        if (courseData.isMandatory) courseData.isMandatory = courseData.isMandatory === 'true';
+        if (courseData.isTemplate) courseData.isTemplate = courseData.isTemplate === 'true';
+
+        if (req.file) {
+            courseData.image = req.file.path;
+        }
+
+        const course = await Course.create(courseData);
+        console.log('Successfully created course:', course._id);
         res.status(201).json(course);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Create Course Detailed Error:', error);
+        res.status(500).json({ 
+            message: error.message, 
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            details: error.errors // สำหรับ Mongoose Validation Errors
+        });
     }
 };
 
 exports.updateCourse = async (req, res) => {
     try {
-        const course = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        console.log('--- Update Course Debug ---');
+        console.log('ID:', req.params.id);
+        console.log('Body:', req.body);
+
+        const updateData = { ...req.body };
+
+        // Parse complex fields
+        ['enrollmentSettings', 'publishSettings', 'tags', 'attachments'].forEach(field => {
+            if (typeof updateData[field] === 'string') {
+                try {
+                    updateData[field] = JSON.parse(updateData[field]);
+                } catch (e) {
+                    console.error(`Error parsing ${field}:`, e);
+                }
+            }
+        });
+
+        // Convert strings to proper types
+        if (updateData.price) updateData.price = Number(updateData.price);
+        if (updateData.isMandatory) updateData.isMandatory = updateData.isMandatory === 'true';
+        if (updateData.isTemplate) updateData.isTemplate = updateData.isTemplate === 'true';
+
+        if (req.file) {
+            updateData.image = req.file.path;
+        }
+
+        const course = await Course.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+        console.log('Successfully updated course:', course._id);
         res.json(course);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Update Course Detailed Error:', error);
+        res.status(500).json({ 
+            message: error.message, 
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            details: error.errors
+        });
     }
 };
 
@@ -54,9 +120,9 @@ exports.addSection = async (req, res) => {
 };
 
 exports.addLesson = async (req, res) => {
-    const { title, videoUrl, content, type, priority } = req.body;
+    const { title, url, content, type, priority } = req.body;
     try {
-        const lesson = await Lesson.create({ sectionId: req.params.sectionId, title, videoUrl, content, type, priority });
+        const lesson = await Lesson.create({ sectionId: req.params.sectionId, title, url, content, type, priority });
         await Section.findByIdAndUpdate(req.params.sectionId, { $push: { lessons: lesson._id } });
         res.status(201).json(lesson);
     } catch (error) {

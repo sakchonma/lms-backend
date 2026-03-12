@@ -2,7 +2,7 @@ const Class = require('../../models/Class');
 
 exports.getClasses = async (req, res) => {
     try {
-        const classes = await Class.find().populate('course').populate('users', 'firstName lastName email');
+        const classes = await Class.find();
         res.json(classes);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -10,59 +10,82 @@ exports.getClasses = async (req, res) => {
 };
 
 exports.createClass = async (req, res) => {
-    const { title, course, users, schedule } = req.body;
     try {
-        const newClass = await Class.create({ title, course, users, schedule });
+        console.log('--- Create Class Debug ---');
+        const classData = { ...req.body };
+
+        // Parse complex fields
+        ['rounds', 'checkInSettings', 'enrollmentSettings', 'publishSettings', 'tags', 'attachments'].forEach(field => {
+            if (typeof classData[field] === 'string') {
+                try {
+                    classData[field] = JSON.parse(classData[field]);
+                } catch (e) {
+                    console.error(`Error parsing ${field}:`, e);
+                }
+            }
+        });
+
+        // Convert strings to proper types
+        if (classData.price) classData.price = Number(classData.price);
+        if (classData.isMandatory) classData.isMandatory = classData.isMandatory === 'true';
+        if (classData.isTemplate) classData.isTemplate = classData.isTemplate === 'true';
+
+        if (req.file) {
+            classData.image = req.file.path;
+        }
+        const newClass = await Class.create(classData); 
         res.status(201).json(newClass);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Create Class Detailed Error:', error);
+        res.status(500).json({ message: error.message, details: error.errors });
     }
 };
 
 exports.updateClass = async (req, res) => {
     try {
-        const foundClass = await Class.findById(req.params.id);
-        if (foundClass) {
-            foundClass.title = req.body.title || foundClass.title;
-            foundClass.course = req.body.course || foundClass.course;
-            foundClass.users = req.body.users || foundClass.users;
-            foundClass.schedule = req.body.schedule || foundClass.schedule;
+        console.log('--- Update Class Debug ---');
+        const updateData = { ...req.body };
 
-            const updatedClass = await foundClass.save();
-            res.json(updatedClass);
-        } else {
-            res.status(404).json({ message: 'Class not found' });
+        // Parse complex fields
+        ['rounds', 'checkInSettings', 'enrollmentSettings', 'publishSettings', 'tags', 'attachments'].forEach(field => {
+            if (typeof updateData[field] === 'string') {
+                try {
+                    updateData[field] = JSON.parse(updateData[field]);
+                } catch (e) {
+                    console.error(`Error parsing ${field}:`, e);
+                }
+            }
+        });
+
+        // Convert strings to proper types
+        if (updateData.price) updateData.price = Number(updateData.price);
+        if (updateData.isMandatory) updateData.isMandatory = updateData.isMandatory === 'true';
+        if (updateData.isTemplate) updateData.isTemplate = updateData.isTemplate === 'true';
+
+        if (req.file) {
+            updateData.image = req.file.path;
         }
+        const updatedClass = await Class.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+        res.json(updatedClass);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Update Class Detailed Error:', error);
+        res.status(500).json({ message: error.message, details: error.errors });
     }
 };
 
 exports.deleteClass = async (req, res) => {
     try {
-        const foundClass = await Class.findById(req.params.id);
-        if (foundClass) {
-            await foundClass.remove();
-            res.json({ message: 'Class removed' });
-        } else {
-            res.status(404).json({ message: 'Class not found' });
-        }
+        await Class.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Class removed successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
 exports.assignUsersToClass = async (req, res) => {
-    const { users } = req.body;
     try {
-        const foundClass = await Class.findById(req.params.id);
-        if (foundClass) {
-            foundClass.users = [...new Set([...foundClass.users, ...users])];
-            await foundClass.save();
-            res.json(foundClass);
-        } else {
-            res.status(404).json({ message: 'Class not found' });
-        }
+        // Implement assignment logic here if needed
+        res.json({ message: 'Feature not yet fully implemented' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
