@@ -54,7 +54,10 @@ exports.getMe = async (req, res) => {
         const user = await User.findById(req.user._id)
             .select('-password')
             .populate('myCourses')
-            .populate('pendingCourses');
+            .populate('pendingCourses')
+            .populate('myPathways')
+            .populate('myClasses')
+            .populate('inventory');
         res.json(user);
     } catch (error) {
         res.status(500).json({ message: error.message });

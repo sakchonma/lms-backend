@@ -5,28 +5,52 @@ const {
     getCourseDetail, 
     getMyCourses, 
     enrollCourse, 
-    getAssignedPathways, 
     completeCourse,
+    getAssignedPathways,
     getAllPathways,
     enrollPathway,
     getClassesCatalog,
     getClassDetail,
+    getMyClasses,
     enrollClass,
-    getMyClasses
+    completePathway,
+    getInventory,
+    equipItem
 } = require('../../controllers/learner/learner.controller');
 const { protect } = require('../../middlewares/auth.middleware');
 
+router.use(protect);
+
+// --- My Progress Routes ---
+router.get('/my-courses', getMyCourses);
+router.get('/my-classes', getMyClasses);
+router.get('/pathways', getAssignedPathways);
+
+// --- Catalog Routes ---
 router.get('/catalog', getCourseCatalog);
 router.get('/classes', getClassesCatalog);
-router.get('/my-classes', protect, getMyClasses);
-router.get('/class/:id', getClassDetail);
+router.get('/all-pathways', getAllPathways);
+
+// --- Detail Routes ---
 router.get('/course/:id', getCourseDetail);
-router.get('/my-courses', protect, getMyCourses);
-router.post('/enroll/:id', protect, enrollCourse);
-router.post('/enroll-class/:id', protect, enrollClass);
-router.post('/complete-course/:id', protect, completeCourse);
-router.get('/pathways', protect, getAssignedPathways);
-router.get('/all-pathways', protect, getAllPathways);
-router.post('/enroll-pathway/:id', protect, enrollPathway);
+router.get('/class/:id', getClassDetail);
+
+// --- Enrollment & Actions ---
+router.post('/course/:id/enroll', enrollCourse);
+router.post('/enroll/:id', enrollCourse);
+
+router.post('/course/:id/complete', completeCourse);
+router.post('/complete-course/:id', completeCourse);
+
+router.post('/pathway/:id/enroll', enrollPathway);
+router.post('/enroll-pathway/:id', enrollPathway);
+router.post('/pathway/:id/complete', completePathway);
+
+router.post('/class/:id/enroll', enrollClass);
+router.post('/enroll-class/:id', enrollClass);
+
+// --- Profile & Gamification ---
+router.get('/inventory', getInventory);
+router.post('/equip', equipItem);
 
 module.exports = router;

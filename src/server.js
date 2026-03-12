@@ -23,6 +23,7 @@ app.use('/api/admin/users', require('./routers/admin/user.router'));
 app.use('/api/admin/courses', require('./routers/admin/course.router'));
 app.use('/api/admin/classes', require('./routers/admin/class.router'));
 app.use('/api/admin/pathways', require('./routers/admin/pathway.router'));
+app.use('/api/admin/rewards', require('./routers/admin/reward.router'));
 app.use('/api/admin/dashboard', require('./routers/admin/dashboard.router'));
 
 app.use('/api/learner', require('./routers/learner/learner.router'));

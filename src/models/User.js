@@ -18,11 +18,16 @@ const userSchema = new mongoose.Schema({
     pendingPathways: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Pathway' }],
     pendingClasses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }],
     completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+    completedPathways: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Pathway' }],
     // Game Stats
     level: { type: Number, default: 1 },
     xp: { type: Number, default: 0 },
     rank: { type: String, default: 'NOVICE' },
     points: { type: Number, default: 0 },
+    // Inventory System
+    inventory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Reward' }],
+    equippedAvatar: { type: String, default: '' }, // URL ของรูปที่เลือกใช้จากรางวัล
+    equippedFrame: { type: String, default: '' },  // URL ของกรอบรูปที่เลือกใช้
     created_at: { type: Date, default: Date.now },
 });
 
